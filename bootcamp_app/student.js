@@ -7,19 +7,24 @@ const pool = new Pool({
   database: 'bootcampx'
 });
 
-const cohort = process.argv[2];
-const limit = process.argv[3];
+const queryString = `
+  SELECT students.id as student_id, students.name as name, cohorts.name as cohort
+  FROM students
+  JOIN cohorts ON cohorts.id = cohort_id
+  WHERE cohorts.name LIKE $1
+  LIMIT $2;
+  `;
 
-pool.query(`
-  SELECT students.id, students.name as name, cohorts.name as cohort
-  FROM cohorts
-  JOIN students on cohort_id = cohorts.id
-  WHERE cohorts.name like '%${cohort}%'
-  LIMIT ${limit};
-`)
+const cohortName = process.argv[2];
+const limit = process.argv[3] || 5;
+
+// Store all potentially malicious values in an array.
+const values = [`%${cohortName}%`, limit];
+
+pool.query(queryString, values)
   .then(response => {
     response.rows.forEach(user => {
-      console.log(`${user.name} has an id of ${user.id} and was in the ${user.cohort} cohort`);
+      console.log(`${user.name} has an id of ${user.student_id} and was in the ${user.cohort} cohort`);
     });
   })
   .catch(error => console.error('query error', error.stack));
